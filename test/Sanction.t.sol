@@ -34,13 +34,11 @@ contract SanctionTest is ISanctionEvents, Test {
         vm.deal(_unauthorizedUser, 100 ether);
     }
 
-    function _itRevertsWhenUserIsNotAdmin(bytes4 selector) private {
+    function _itRevertsWhenUserIsNotAdmin(bytes memory func) private {
         vm.expectRevert(
             "AccessControl: account 0xe6b3367318c5e11a6eed3cd0d850ec06a02e9b90 is missing role 0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775"
         );
-        (bool success,) = address(_user).call(
-            abi.encodeWithSelector(selector, _unauthorizedUser)
-        );
+        (bool success,) = address(_user).call(func);
 
         assertFalse(success);
     }
@@ -59,7 +57,9 @@ contract SanctionTest is ISanctionEvents, Test {
     }
 
     function testAddToSanctionList() external {
-        _itRevertsWhenUserIsNotAdmin(_sanction.addToSanctionList.selector);
+        _itRevertsWhenUserIsNotAdmin(
+            abi.encodeCall(_sanction.addToSanctionList, _unauthorizedUser)
+        );
         _itAddsUserToSanctionList(_unauthorizedUser);
     }
 
@@ -79,7 +79,9 @@ contract SanctionTest is ISanctionEvents, Test {
     }
 
     function testRemoveFromSanctionList() external {
-        _itRevertsWhenUserIsNotAdmin(_sanction.removeFromSanctionList.selector);
+        _itRevertsWhenUserIsNotAdmin(
+            abi.encodeCall(_sanction.removeFromSanctionList, _unauthorizedUser)
+        );
         _itRemovesUserFromSanctionList(_unauthorizedUser);
     }
 
