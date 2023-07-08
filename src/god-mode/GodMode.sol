@@ -10,4 +10,12 @@ contract GodMode is ERC20, AccessControl {
     constructor(address god) ERC20("GodMode", "GOD") {
         _grantRole(GOD_ROLE, god);
     }
+
+    function mint(uint256 amount) external payable {
+        _mint(msg.sender, amount);
+    }
+
+    function burn(uint256 amount) external {
+        _burn(msg.sender, amount);
+    }
 }
