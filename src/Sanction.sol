@@ -54,36 +54,20 @@ contract Sanction is ISanctionEvents, ERC20, AccessControl {
         emit SanctionListUpdate(msg.sender, user, "REMOVE");
     }
 
-    function mint(uint256 amount) external payable checkSanctions {
+    function mint(uint256 amount) external payable {
         _mint(msg.sender, amount);
     }
 
-    function burn(uint256 amount) external checkSanctions {
+    function burn(uint256 amount) external {
         _burn(msg.sender, amount);
     }
 
-    function transfer(address to, uint256 amount)
-        public
+    function _beforeTokenTransfer(address from, address to, uint256 amount)
+        internal
         virtual
         override
         checkSanctions
-        returns (bool)
     {
-        address owner = _msgSender();
-        _transfer(owner, to, amount);
-        return true;
-    }
-
-    function transferFrom(address from, address to, uint256 amount)
-        public
-        virtual
-        override
-        checkSanctions
-        returns (bool)
-    {
-        address spender = _msgSender();
-        _spendAllowance(from, spender, amount);
-        _transfer(from, to, amount);
-        return true;
+        super._beforeTokenTransfer(from, to, amount);
     }
 }
