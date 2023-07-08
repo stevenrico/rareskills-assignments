@@ -151,4 +151,43 @@ contract SanctionTest is ISanctionEvents, Test {
 
         _itAllowsAuthorizedUserToTransfer(_authorizedUser, _user);
     }
+
+    function _itDoesNotAllowUnauthorizedUserToTransferFrom(
+        address user,
+        address recipient
+    ) private {
+        assertEq(_sanction.balanceOf(user), 100);
+        assertEq(_sanction.balanceOf(recipient), 0);
+    }
+
+    function _itAllowsAuthorizedUserToTransferFrom(
+        address user,
+        address recipient
+    ) private {
+        vm.prank(recipient);
+        _sanction.transferFrom(user, recipient, 50);
+
+        assertEq(_sanction.balanceOf(user), 50);
+        assertEq(_sanction.balanceOf(recipient), 50);
+    }
+
+    function testTransferFrom() external {
+        vm.startPrank(_user);
+        _sanction.mint(100);
+
+        _sanction.approve(_unauthorizedUser, 50);
+        _sanction.approve(_authorizedUser, 50);
+
+        vm.stopPrank();
+
+        _itRevertsWhenUserIsOnSanctionList(
+            _unauthorizedUser,
+            abi.encodeCall(
+                _sanction.transferFrom, (_user, _unauthorizedUser, 50)
+            )
+        );
+        _itDoesNotAllowUnauthorizedUserToTransferFrom(_user, _unauthorizedUser);
+
+        _itAllowsAuthorizedUserToTransferFrom(_user, _authorizedUser);
+    }
 }
