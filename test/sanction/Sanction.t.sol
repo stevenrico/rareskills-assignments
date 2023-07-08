@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import { Test } from "forge-std/Test.sol";
+import { Test } from "@forge-std/Test.sol";
 
-import { Sanction } from "../src/Sanction.sol";
-import { ISanctionEvents } from "../src/ISanction.sol";
+import { Sanction } from "contracts/sanction/Sanction.sol";
+import { ISanctionEvents } from "contracts/sanction/ISanction.sol";
 
 contract SanctionTest is ISanctionEvents, Test {
     Sanction private _sanction;

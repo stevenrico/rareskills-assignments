@@ -3,9 +3,9 @@ pragma solidity ^0.8.19;
 
 import { ISanctionEvents } from "./ISanction.sol";
 
-import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
-import { AccessControl } from "openzeppelin/access/AccessControl.sol";
-import { Strings } from "openzeppelin/utils/Strings.sol";
+import { ERC20 } from "@openzeppelin/token/ERC20/ERC20.sol";
+import { AccessControl } from "@openzeppelin/access/AccessControl.sol";
+import { Strings } from "@openzeppelin/utils/Strings.sol";
 
 contract Sanction is ISanctionEvents, ERC20, AccessControl {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
