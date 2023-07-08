@@ -119,6 +119,32 @@ contract SanctionTest is ISanctionEvents, Test {
         _itAllowsAuthorizedUserToMint(_authorizedUser);
     }
 
+    function _itDoesNotAllowUnauthorizedUserToBurn(address user) private {
+        assertEq(_sanction.balanceOf(user), 100);
+    }
+
+    function _itAllowsAuthorizedUserToBurn(address user) private {
+        vm.prank(user);
+        _sanction.burn(100);
+
+        assertEq(_sanction.balanceOf(user), 0);
+    }
+
+    function testBurn() external {
+        vm.prank(_unauthorizedUser);
+        _sanction.mint(100);
+
+        vm.prank(_authorizedUser);
+        _sanction.mint(100);
+
+        _itRevertsWhenUserIsOnSanctionList(
+            _unauthorizedUser, abi.encodeCall(_sanction.burn, 100)
+        );
+        _itDoesNotAllowUnauthorizedUserToBurn(_unauthorizedUser);
+
+        _itAllowsAuthorizedUserToBurn(_authorizedUser);
+    }
+
     function _itDoesNotAllowUnauthorizedUserToTransfer(
         address user,
         address recipient

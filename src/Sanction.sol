@@ -58,6 +58,10 @@ contract Sanction is ISanctionEvents, ERC20, AccessControl {
         _mint(msg.sender, amount);
     }
 
+    function burn(uint256 amount) external checkSanctions {
+        _burn(msg.sender, amount);
+    }
+
     function transfer(address to, uint256 amount)
         public
         virtual
