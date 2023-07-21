@@ -14,16 +14,17 @@ contract Staking {
     }
 
     function onERC721Received(
-        address operator,
+        address,
         address from,
         uint256 tokenId,
-        bytes calldata data
+        bytes calldata
     ) external returns (bytes4) {
+        _stakers[tokenId] = from;
+
         return IERC721Receiver.onERC721Received.selector;
     }
 
     function stake(uint256 tokenId) external {
-        _stakers[tokenId] = msg.sender;
         _stakerNFT.safeTransferFrom(msg.sender, address(this), tokenId);
     }
 

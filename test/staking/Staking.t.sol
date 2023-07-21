@@ -48,6 +48,15 @@ contract StakingTest is Test {
         vm.stopPrank();
     }
 
+    function _stakeTokenWithOnReceived(address user, uint256 tokenId) private {
+        vm.startPrank(user);
+
+        _stakerNFT.approve(address(_staking), tokenId);
+        _stakerNFT.safeTransferFrom(user, address(_staking), tokenId);
+
+        vm.stopPrank();
+    }
+
     function _itRevertsWithoutApproval(address user, uint256 tokenId) private {
         vm.expectRevert("ERC721: caller is not token owner or approved");
         vm.prank(user);
@@ -70,6 +79,17 @@ contract StakingTest is Test {
         _itRevertsWithoutApproval(_userOne, tokenId);
 
         _stakeToken(_userOne, tokenId);
+
+        _itTransfersOwnership(tokenId, address(_staking));
+        _itStoresStaker(tokenId, _userOne);
+    }
+
+    function testStakeWithOnReceived() external {
+        uint256 tokenId = 1;
+
+        _itRevertsWithoutApproval(_userOne, tokenId);
+
+        _stakeTokenWithOnReceived(_userOne, tokenId);
 
         _itTransfersOwnership(tokenId, address(_staking));
         _itStoresStaker(tokenId, _userOne);
