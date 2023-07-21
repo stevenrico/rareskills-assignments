@@ -7,8 +7,12 @@ import { AccessControl } from "@openzeppelin/access/AccessControl.sol";
 contract RewardERC20 is ERC20, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-    constructor(address minter) ERC20("Reward", "RWRD") {
-        _grantRole(MINTER_ROLE, minter);
+    constructor() ERC20("Reward", "RWRD") {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
+
+    function grantMinterRole(address account) external {
+        grantRole(MINTER_ROLE, account);
     }
 
     function mintTo(address to, uint256 amount)

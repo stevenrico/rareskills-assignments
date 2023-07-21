@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import { Test } from "@forge-std/Test.sol";
+import { console } from "@forge-std/Console.sol";
 import { RewardERC20 } from "contracts/staking/RewardERC20.sol";
 
 import { Staking } from "contracts/staking/Staking.sol";
@@ -22,9 +23,10 @@ contract RewardERC20Test is Test {
         vm.label(_owner, "OWNER");
         vm.deal(_owner, 100 ether);
 
-        _staking = new Staking(address(0));
+        vm.prank(_owner);
+        _rewardToken = new RewardERC20();
 
-        _rewardToken = new RewardERC20(address(_staking));
+        _staking = new Staking(address(0), address(_rewardToken));
 
         _userOne = vm.addr(101);
         vm.label(_userOne, "USER ONE");
@@ -33,6 +35,28 @@ contract RewardERC20Test is Test {
         _userTwo = vm.addr(102);
         vm.label(_userTwo, "USER TWO");
         vm.deal(_userTwo, 100 ether);
+    }
+
+    function _itRevertsWhenCallerIsNotAdmin(address user)  private{
+        vm.expectRevert(
+            "AccessControl: account 0xe6b3367318c5e11a6eed3cd0d850ec06a02e9b90 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+        vm.prank(user);
+        _rewardToken.grantMinterRole(user);
+    }
+
+    function _itGrantsMinterRole(address user, address account) private {
+        bytes32 role = keccak256("MINTER_ROLE");
+
+        vm.prank(user);
+        _rewardToken.grantMinterRole(account);
+
+        assertTrue(_rewardToken.hasRole(role, account));
+    } 
+
+    function testGrantMinterRole() external {
+        _itRevertsWhenCallerIsNotAdmin(_userOne);
+        _itGrantsMinterRole(_owner, address(_staking));
     }
 
     function _mintTokensTo(address user, uint256 amount) private {
@@ -57,10 +81,13 @@ contract RewardERC20Test is Test {
     function testMintTo() external {
         uint256 mintAmount = 1 * _scale;
 
+        vm.prank(_owner);
+        _rewardToken.grantMinterRole(address(_staking));
+
         _itRevertsWhenCallerIsNotMinter(_userTwo, mintAmount);
 
         _mintTokensTo(_userOne, mintAmount);
-        
+
         _itMintsToUser(_userOne, mintAmount);
     }
 }
