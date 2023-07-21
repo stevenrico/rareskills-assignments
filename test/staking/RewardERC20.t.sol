@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import { Test } from "@forge-std/Test.sol";
-import { console } from "@forge-std/Console.sol";
 import { RewardERC20 } from "contracts/staking/RewardERC20.sol";
 
 import { Staking } from "contracts/staking/Staking.sol";
@@ -37,7 +36,7 @@ contract RewardERC20Test is Test {
         vm.deal(_userTwo, 100 ether);
     }
 
-    function _itRevertsWhenCallerIsNotAdmin(address user)  private{
+    function _itRevertsWhenCallerIsNotAdmin(address user) private {
         vm.expectRevert(
             "AccessControl: account 0xe6b3367318c5e11a6eed3cd0d850ec06a02e9b90 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000"
         );
@@ -52,7 +51,7 @@ contract RewardERC20Test is Test {
         _rewardToken.grantMinterRole(account);
 
         assertTrue(_rewardToken.hasRole(role, account));
-    } 
+    }
 
     function testGrantMinterRole() external {
         _itRevertsWhenCallerIsNotAdmin(_userOne);
@@ -85,9 +84,7 @@ contract RewardERC20Test is Test {
         _rewardToken.grantMinterRole(address(_staking));
 
         _itRevertsWhenCallerIsNotMinter(_userTwo, mintAmount);
-
         _mintTokensTo(_userOne, mintAmount);
-
         _itMintsToUser(_userOne, mintAmount);
     }
 }
