@@ -22,6 +22,7 @@ contract StakerERC721Test is Test {
         vm.label(_owner, "OWNER");
         vm.deal(_owner, 100 ether);
 
+        vm.prank(_owner);
         _staker = new StakerERC721(MINT_PRICE, ROYALTY_FEE);
 
         _userOne = vm.addr(101);
@@ -117,5 +118,34 @@ contract StakerERC721Test is Test {
 
         _itReturnsRoyaltyInfoForSale(receiver, royalty);
         _itReceivesRoyaltiesFromMarketplace(receiver, royalty);
+    }
+
+    function _itRevertsWhenBalanceIsZero(address user) private {
+        vm.expectRevert("StakerERC721: unable to withdraw");
+        vm.prank(user);
+        _staker.withdraw();
+    }
+
+    function _itRevertsWhenCallerIsNotOwner(address user) private {
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(user);
+        _staker.withdraw();
+    }
+
+    function _itWithdraws(address user, uint256 expectedAmount) private {
+        vm.prank(user);
+        _staker.withdraw();
+
+        assertEq(address(user).balance, expectedAmount);
+    }
+
+    function testWithdraw() external {
+        _itRevertsWhenBalanceIsZero(_owner);
+
+        vm.prank(_userOne);
+        _staker.mint{ value: 1 ether }();
+
+        _itRevertsWhenCallerIsNotOwner(_userOne);
+        _itWithdraws(_owner, 101 ether);
     }
 }

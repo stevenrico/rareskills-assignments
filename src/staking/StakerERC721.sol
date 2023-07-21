@@ -3,8 +3,9 @@ pragma solidity ^0.8.19;
 
 import { ERC721 } from "@openzeppelin/token/ERC721/ERC721.sol";
 import { ERC2981 } from "@openzeppelin/token/common/ERC2981.sol";
+import { Ownable2Step } from "@openzeppelin/access/Ownable2Step.sol";
 
-contract StakerERC721 is ERC721, ERC2981 {
+contract StakerERC721 is ERC721, ERC2981, Ownable2Step {
     uint256 private _mintPrice;
 
     uint256 public constant MAX_SUPPLY = 20;
@@ -29,6 +30,16 @@ contract StakerERC721 is ERC721, ERC2981 {
     }
 
     receive() external payable { }
+
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+
+        require(balance > 0, "StakerERC721: unable to withdraw");
+
+        (bool success,) = address(msg.sender).call{ value: balance }("");
+
+        require(success, "StakerERC721: failed to withdraw");
+    }
 
     function getBalance() external view returns (uint256) {
         return address(this).balance;
