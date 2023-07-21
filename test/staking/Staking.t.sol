@@ -39,24 +39,24 @@ contract StakingTest is Test {
         vm.deal(_userTwo, 100 ether);
     }
 
+    function _stakeToken(address user, uint256 tokenId) private {
+        vm.startPrank(user);
+
+        _stakerNFT.approve(address(_staking), tokenId);
+        _staking.stake(tokenId);
+
+        vm.stopPrank();
+    }
+
     function _itRevertsWithoutApproval(address user, uint256 tokenId) private {
         vm.expectRevert("ERC721: caller is not token owner or approved");
         vm.prank(user);
         _staking.stake(tokenId);
     }
 
-    function _itTransfersOwnership(
-        address user,
-        uint256 tokenId,
-        address expectedOwner
-    ) private {
-        vm.startPrank(user);
-
-        _stakerNFT.approve(expectedOwner, tokenId);
-        _staking.stake(tokenId);
-
-        vm.stopPrank();
-
+    function _itTransfersOwnership(uint256 tokenId, address expectedOwner)
+        private
+    {
         assertEq(_stakerNFT.ownerOf(tokenId), expectedOwner);
     }
 
@@ -68,7 +68,36 @@ contract StakingTest is Test {
         uint256 tokenId = 1;
 
         _itRevertsWithoutApproval(_userOne, tokenId);
-        _itTransfersOwnership(_userOne, tokenId, address(_staking));
+
+        _stakeToken(_userOne, tokenId);
+
+        _itTransfersOwnership(tokenId, address(_staking));
         _itStoresStaker(tokenId, _userOne);
+    }
+
+    function _itRevertsIfUserIsNotStaker(address user, uint256 tokenId)
+        private
+    {
+        vm.expectRevert("Staking: unauthorized access to token");
+        vm.prank(user);
+        _staking.unstake(tokenId);
+    }
+
+    function _itRemovesStaker(uint256 tokenId) private {
+        assertEq(_staking.getStaker(tokenId), address(0));
+    }
+
+    function testUnstake() external {
+        uint256 tokenId = 1;
+
+        _stakeToken(_userOne, tokenId);
+
+        _itRevertsIfUserIsNotStaker(_userTwo, tokenId);
+
+        vm.prank(_userOne);
+        _staking.unstake(tokenId);
+
+        _itTransfersOwnership(tokenId, _userOne);
+        _itRemovesStaker(tokenId);
     }
 }

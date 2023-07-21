@@ -27,6 +27,17 @@ contract Staking {
         _stakerNFT.safeTransferFrom(msg.sender, address(this), tokenId);
     }
 
+    function unstake(uint256 tokenId) external {
+        require(
+            _stakers[tokenId] == msg.sender,
+            "Staking: unauthorized access to token"
+        );
+
+        delete _stakers[tokenId];
+
+        _stakerNFT.safeTransferFrom(address(this), msg.sender, tokenId);
+    }
+
     function getStaker(uint256 tokenId) external view returns (address) {
         return _stakers[tokenId];
     }
