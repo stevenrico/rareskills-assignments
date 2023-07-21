@@ -5,10 +5,12 @@ import { Test } from "@forge-std/Test.sol";
 import { Staking } from "contracts/staking/Staking.sol";
 
 import { StakerERC721 } from "contracts/staking/StakerERC721.sol";
+import { RewardERC20 } from "contracts/staking/RewardERC20.sol";
 
 contract StakingTest is Test {
     Staking private _staking;
     StakerERC721 private _stakerNFT;
+    RewardERC20 private _rewardToken;
 
     address private _owner;
 
@@ -24,8 +26,9 @@ contract StakingTest is Test {
         vm.deal(_owner, 100 ether);
 
         _stakerNFT = new StakerERC721(MINT_PRICE, ROYALTY_FEE);
+        _rewardToken = new RewardERC20();
 
-        _staking = new Staking(address(_stakerNFT));
+        _staking = new Staking(address(_stakerNFT), address(_rewardToken));
 
         _userOne = vm.addr(101);
         vm.label(_userOne, "USER ONE");
