@@ -101,7 +101,7 @@ contract StakerERC721Test is Test {
         uint256 royalty
     ) private {
         vm.prank(_marketplace);
-        (bool success,) = address(receiver).call{ value: royalty }("");
+        (bool success,) = receiver.call{ value: royalty }("");
 
         assertTrue(success);
         assertEq(_staker.getBalance(), 1.025 ether);
@@ -136,7 +136,26 @@ contract StakerERC721Test is Test {
         vm.prank(user);
         _staker.withdraw();
 
-        assertEq(address(user).balance, expectedAmount);
+        assertEq(user.balance, expectedAmount);
+    }
+
+    function _itWithdrawsAfterOwnershipTransfer(
+        address oldOwner,
+        address newOwner,
+        uint256 expectedAmount
+    ) private {
+        vm.prank(oldOwner);
+        _staker.transferOwnership(newOwner);
+
+        vm.startPrank(newOwner);
+
+        _staker.acceptOwnership();
+        _staker.withdraw();
+
+        vm.stopPrank();
+
+        assertEq(_staker.owner(), newOwner);
+        assertEq(newOwner.balance, expectedAmount);
     }
 
     function testWithdraw() external {
@@ -147,5 +166,11 @@ contract StakerERC721Test is Test {
 
         _itRevertsWhenCallerIsNotOwner(_userOne);
         _itWithdraws(_owner, 101 ether);
+
+        vm.prank(_userOne);
+        _staker.mint{ value: 1 ether }();
+
+        _itWithdrawsAfterOwnershipTransfer(_owner, _userTwo, 101 ether);
+        _itRevertsWhenCallerIsNotOwner(_owner);
     }
 }
