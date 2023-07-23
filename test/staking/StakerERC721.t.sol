@@ -2,7 +2,10 @@
 pragma solidity ^0.8.19;
 
 import { Test } from "@forge-std/Test.sol";
+import { console } from "@forge-std/Console.sol";
 import { StakerERC721 } from "contracts/staking/StakerERC721.sol";
+
+import { Strings } from "@openzeppelin/utils/Strings.sol";
 
 contract StakerERC721Test is Test {
     StakerERC721 private _staker;
@@ -11,10 +14,14 @@ contract StakerERC721Test is Test {
 
     address private _userOne;
     address private _userTwo;
+    address private _userThree;
+    address private _userFour;
 
     address private _marketplace;
 
     uint256 public constant MINT_PRICE = 1 ether;
+    uint256 public constant PUBLIC_MINT_INDEX = 11;
+    uint256 public constant DISCOUNT_PRICE = 0.5 ether;
     uint96 public constant ROYALTY_FEE = 250;
 
     function setUp() public {
@@ -22,8 +29,13 @@ contract StakerERC721Test is Test {
         vm.label(_owner, "OWNER");
         vm.deal(_owner, 100 ether);
 
+        string memory data =
+            vm.readFile("./test/merkle-tree/assets/StakerERC721.json");
+        bytes memory root = vm.parseJson(data, "$.root");
+
         vm.prank(_owner);
-        _staker = new StakerERC721(MINT_PRICE, ROYALTY_FEE);
+        _staker =
+        new StakerERC721(MINT_PRICE, PUBLIC_MINT_INDEX, DISCOUNT_PRICE, ROYALTY_FEE, bytes32(root));
 
         _userOne = vm.addr(101);
         vm.label(_userOne, "USER ONE");
@@ -31,6 +43,12 @@ contract StakerERC721Test is Test {
         _userTwo = vm.addr(102);
         vm.label(_userTwo, "USER TWO");
         vm.deal(_userTwo, 100 ether);
+        _userThree = vm.addr(103);
+        vm.label(_userThree, "USER THREE");
+        vm.deal(_userThree, 100 ether);
+        _userFour = vm.addr(104);
+        vm.label(_userFour, "USER FOUR");
+        vm.deal(_userFour, 100 ether);
 
         _marketplace = vm.addr(200);
         vm.label(_marketplace, "MARKETPLACE");
@@ -39,7 +57,7 @@ contract StakerERC721Test is Test {
 
     function _itMintsAToken(address user, uint256 expectedAmount) private {
         vm.prank(user);
-        _staker.mint{ value: 1 ether }();
+        _staker.mint{ value: MINT_PRICE }();
 
         assertEq(_staker.balanceOf(user), expectedAmount);
     }
@@ -53,16 +71,16 @@ contract StakerERC721Test is Test {
     function _itRevertsWhenMaxSupplyIsReached(address user) private {
         vm.startPrank(user);
 
-        for (uint256 i = 1; i <= 19; i++) {
-            _staker.mint{ value: 1 ether }();
+        for (uint256 i = PUBLIC_MINT_INDEX + 1; i <= 20; i++) {
+            _staker.mint{ value: MINT_PRICE }();
         }
 
         vm.expectRevert("Staker: tokens are sold out");
-        _staker.mint{ value: 1 ether }();
+        _staker.mint{ value: MINT_PRICE }();
 
         vm.stopPrank();
 
-        assertEq(_staker.balanceOf(user), 20);
+        assertEq(_staker.balanceOf(user), 10);
     }
 
     function testMint() external {
@@ -71,22 +89,114 @@ contract StakerERC721Test is Test {
         _itRevertsWhenMaxSupplyIsReached(_userOne);
     }
 
+    function _getProof(address user) private returns (bytes32[] memory) {
+        string memory data =
+            vm.readFile("./test/merkle-tree/assets/StakerERC721.json");
+        string memory key =
+            string.concat("$.proofs.", Strings.toHexString(user));
+
+        return vm.parseJsonBytes32Array(data, key);
+    }
+
+    function _itRevertsWhenVerficationFails(
+        address user,
+        uint256 value,
+        uint256 index,
+        uint256 expectedAmount
+    ) private {
+        bytes32[] memory proof = _getProof(user);
+
+        vm.expectRevert("StakerERC721: not eligible for discount");
+        vm.prank(user);
+        _staker.claim{ value: value }(proof, index, expectedAmount);
+
+        assertEq(_staker.balanceOf(user), 0);
+    }
+
+    function _itRevertsWhenIncorrectAmountSentForClaim(
+        address user,
+        uint256 value,
+        uint256 index,
+        uint256 expectedAmount
+    ) private {
+        bytes32[] memory proof = _getProof(user);
+
+        vm.expectRevert("StakerERC721: incorrect amount sent for mint");
+        vm.prank(user);
+        _staker.claim{ value: value }(proof, index, expectedAmount);
+
+        assertEq(_staker.balanceOf(user), 0);
+    }
+
+    function _itMintsTokensWithDiscounts(
+        address user,
+        uint256 value,
+        uint256 index,
+        uint256 expectedAmount
+    ) private {
+        bytes32[] memory proof = _getProof(user);
+
+        vm.prank(user);
+        _staker.claim{ value: value }(proof, index, expectedAmount);
+
+        assertEq(_staker.balanceOf(user), expectedAmount);
+    }
+
+    function _itRevertsWhenUserHasAlreadyClaimed(
+        address user,
+        uint256 value,
+        uint256 index,
+        uint256 expectedAmount
+    ) private {
+        bytes32[] memory proof = _getProof(user);
+
+        vm.expectRevert("ERC721: token already minted");
+        vm.prank(user);
+        _staker.claim{ value: value }(proof, index, expectedAmount);
+
+        assertEq(_staker.balanceOf(user), expectedAmount);
+    }
+
+    function testClaim() external {
+        _itRevertsWhenVerficationFails(_userTwo, 0.5 ether, 1, 1);
+        _itRevertsWhenIncorrectAmountSentForClaim(_userTwo, 2 ether, 1, 5);
+        _itMintsTokensWithDiscounts(_userTwo, DISCOUNT_PRICE * 5, 1, 5);
+        _itRevertsWhenUserHasAlreadyClaimed(_userTwo, DISCOUNT_PRICE * 5, 1, 5);
+    }
+
     function _itStartsAtZero() private {
         assertEq(_staker.totalSupply(), 0);
     }
 
-    function _itIncrementsAfterMint() private {
+    function _itIncrementsAfterMint(address user) private {
         uint256 currentSupply = _staker.totalSupply();
 
-        vm.prank(_userOne);
-        _staker.mint{ value: 1 ether }();
+        vm.prank(user);
+        _staker.mint{ value: MINT_PRICE }();
 
         assertEq(_staker.totalSupply(), currentSupply + 1);
     }
 
+    function _itIncrementsAfterClaim(
+        address user,
+        uint256 value,
+        uint256 index,
+        uint256 expectedAmount
+    ) private {
+        uint256 currentSupply = _staker.totalSupply();
+
+        bytes32[] memory proof = _getProof(user);
+
+        vm.prank(user);
+        _staker.claim{ value: value }(proof, index, expectedAmount);
+
+        assertEq(_staker.totalSupply(), currentSupply + expectedAmount);
+    }
+
     function testTotalSupply() external {
         _itStartsAtZero();
-        _itIncrementsAfterMint();
+        _itIncrementsAfterMint(_userOne);
+        _itIncrementsAfterClaim(_userTwo, DISCOUNT_PRICE * 5, 1, 5);
     }
 
     function _itReturnsRoyaltyInfoForSale(address receiver, uint256 royalty)
@@ -109,7 +219,7 @@ contract StakerERC721Test is Test {
 
     function testRoyalties() external {
         vm.prank(_userOne);
-        _staker.mint{ value: 1 ether }();
+        _staker.mint{ value: MINT_PRICE }();
 
         uint256 salePrice = 1 ether;
 
@@ -162,13 +272,13 @@ contract StakerERC721Test is Test {
         _itRevertsWhenBalanceIsZero(_owner);
 
         vm.prank(_userOne);
-        _staker.mint{ value: 1 ether }();
+        _staker.mint{ value: MINT_PRICE }();
 
         _itRevertsWhenCallerIsNotOwner(_userOne);
         _itWithdraws(_owner, 101 ether);
 
         vm.prank(_userOne);
-        _staker.mint{ value: 1 ether }();
+        _staker.mint{ value: MINT_PRICE }();
 
         _itWithdrawsAfterOwnershipTransfer(_owner, _userTwo, 101 ether);
         _itRevertsWhenCallerIsNotOwner(_owner);

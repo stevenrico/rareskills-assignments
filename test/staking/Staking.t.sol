@@ -20,6 +20,8 @@ contract StakingTest is Test {
     address private _userTwo;
 
     uint256 public constant MINT_PRICE = 1 ether;
+    uint256 public constant PUBLIC_MINT_INDEX = 1;
+    uint256 public constant DISCOUNT_PRICE = 0.5 ether;
     uint96 public constant ROYALTY_FEE = 250;
 
     function setUp() public {
@@ -29,7 +31,8 @@ contract StakingTest is Test {
 
         vm.startPrank(_owner);
 
-        _stakerNFT = new StakerERC721(MINT_PRICE, ROYALTY_FEE);
+        _stakerNFT =
+        new StakerERC721(MINT_PRICE, PUBLIC_MINT_INDEX, DISCOUNT_PRICE, ROYALTY_FEE, bytes32(""));
         _rewardToken = new RewardERC20();
 
         _scale = 10 ** _rewardToken.decimals();

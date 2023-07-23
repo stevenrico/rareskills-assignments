@@ -1,6 +1,7 @@
 {
   "name": "rareskills-assignments",
   "packageManager": "yarn@3.3.1",
+  "type": "module",
   "scripts": {
     "clean": "rm -rf cache out broadcast",
     "lint": "npm run lint:sol",
@@ -11,5 +12,8 @@
   },
   "devDependencies": {
     "solhint": "^3.4.1"
+  },
+  "dependencies": {
+    "@openzeppelin/merkle-tree": "^1.0.5"
   }
 }

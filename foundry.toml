@@ -6,6 +6,7 @@ solc = "0.8.19"
 optimizer = true
 optimizer_runs = 10_000
 verbosity = 3
+fs_permissions = [{ access = "read", path = "./"}]
 
 [rpc_endpoints]
 localhost = "http://localhost:8545"
