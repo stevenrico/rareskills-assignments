@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import { Test } from "@forge-std/Test.sol";
-import { console } from "@forge-std/Console.sol";
 import { StakerERC721 } from "contracts/staking/StakerERC721.sol";
 
 import { Strings } from "@openzeppelin/utils/Strings.sol";
@@ -89,11 +88,11 @@ contract StakerERC721Test is Test {
         _itRevertsWhenMaxSupplyIsReached(_userOne);
     }
 
-    function _getProof(address user) private returns (bytes32[] memory) {
+    function _getProof(uint256 ticketId) private returns (bytes32[] memory) {
         string memory data =
             vm.readFile("./test/merkle-tree/assets/StakerERC721.json");
         string memory key =
-            string.concat("$.proofs.", Strings.toHexString(user));
+            string.concat("$.proofs.", Strings.toString(ticketId));
 
         return vm.parseJsonBytes32Array(data, key);
     }
@@ -101,43 +100,43 @@ contract StakerERC721Test is Test {
     function _itRevertsWhenVerficationFails(
         address user,
         uint256 value,
-        uint256 index,
+        uint256 ticketId,
         uint256 expectedAmount
     ) private {
-        bytes32[] memory proof = _getProof(user);
+        bytes32[] memory proof = _getProof(ticketId);
 
         vm.expectRevert("StakerERC721: not eligible for discount");
         vm.prank(user);
-        _staker.claim{ value: value }(proof, index, expectedAmount);
+        _staker.claim{ value: value }(proof, ticketId);
 
-        assertEq(_staker.balanceOf(user), 0);
+        assertEq(_staker.balanceOf(user), expectedAmount);
     }
 
     function _itRevertsWhenIncorrectAmountSentForClaim(
         address user,
         uint256 value,
-        uint256 index,
+        uint256 ticketId,
         uint256 expectedAmount
     ) private {
-        bytes32[] memory proof = _getProof(user);
+        bytes32[] memory proof = _getProof(ticketId);
 
         vm.expectRevert("StakerERC721: incorrect amount sent for mint");
         vm.prank(user);
-        _staker.claim{ value: value }(proof, index, expectedAmount);
+        _staker.claim{ value: value }(proof, ticketId);
 
-        assertEq(_staker.balanceOf(user), 0);
+        assertEq(_staker.balanceOf(user), expectedAmount);
     }
 
-    function _itMintsTokensWithDiscounts(
+    function _itMintsATokenWithADiscount(
         address user,
         uint256 value,
-        uint256 index,
+        uint256 ticketId,
         uint256 expectedAmount
     ) private {
-        bytes32[] memory proof = _getProof(user);
+        bytes32[] memory proof = _getProof(ticketId);
 
         vm.prank(user);
-        _staker.claim{ value: value }(proof, index, expectedAmount);
+        _staker.claim{ value: value }(proof, ticketId);
 
         assertEq(_staker.balanceOf(user), expectedAmount);
     }
@@ -145,23 +144,27 @@ contract StakerERC721Test is Test {
     function _itRevertsWhenUserHasAlreadyClaimed(
         address user,
         uint256 value,
-        uint256 index,
+        uint256 ticketId,
         uint256 expectedAmount
     ) private {
-        bytes32[] memory proof = _getProof(user);
+        bytes32[] memory proof = _getProof(ticketId);
 
-        vm.expectRevert("ERC721: token already minted");
+        vm.expectRevert("StakerERC721: discount has been claimed");
         vm.prank(user);
-        _staker.claim{ value: value }(proof, index, expectedAmount);
+        _staker.claim{ value: value }(proof, ticketId);
 
         assertEq(_staker.balanceOf(user), expectedAmount);
     }
 
     function testClaim() external {
-        _itRevertsWhenVerficationFails(_userTwo, 0.5 ether, 1, 1);
-        _itRevertsWhenIncorrectAmountSentForClaim(_userTwo, 2 ether, 1, 5);
-        _itMintsTokensWithDiscounts(_userTwo, DISCOUNT_PRICE * 5, 1, 5);
-        _itRevertsWhenUserHasAlreadyClaimed(_userTwo, DISCOUNT_PRICE * 5, 1, 5);
+        _itRevertsWhenVerficationFails(_userThree, DISCOUNT_PRICE, 1, 0);
+        _itRevertsWhenIncorrectAmountSentForClaim(_userTwo, 0.2 ether, 1, 0);
+        _itMintsATokenWithADiscount(_userTwo, DISCOUNT_PRICE, 1, 1);
+        _itMintsATokenWithADiscount(_userTwo, DISCOUNT_PRICE, 2, 2);
+        _itMintsATokenWithADiscount(_userTwo, DISCOUNT_PRICE, 3, 3);
+        _itMintsATokenWithADiscount(_userThree, DISCOUNT_PRICE, 4, 1);
+        _itMintsATokenWithADiscount(_userFour, DISCOUNT_PRICE, 5, 1);
+        _itRevertsWhenUserHasAlreadyClaimed(_userTwo, DISCOUNT_PRICE, 1, 3);
     }
 
     function _itStartsAtZero() private {
@@ -180,15 +183,15 @@ contract StakerERC721Test is Test {
     function _itIncrementsAfterClaim(
         address user,
         uint256 value,
-        uint256 index,
+        uint256 ticketId,
         uint256 expectedAmount
     ) private {
         uint256 currentSupply = _staker.totalSupply();
 
-        bytes32[] memory proof = _getProof(user);
+        bytes32[] memory proof = _getProof(ticketId);
 
         vm.prank(user);
-        _staker.claim{ value: value }(proof, index, expectedAmount);
+        _staker.claim{ value: value }(proof, ticketId);
 
         assertEq(_staker.totalSupply(), currentSupply + expectedAmount);
     }
@@ -196,7 +199,7 @@ contract StakerERC721Test is Test {
     function testTotalSupply() external {
         _itStartsAtZero();
         _itIncrementsAfterMint(_userOne);
-        _itIncrementsAfterClaim(_userTwo, DISCOUNT_PRICE * 5, 1, 5);
+        _itIncrementsAfterClaim(_userTwo, DISCOUNT_PRICE, 1, 1);
     }
 
     function _itReturnsRoyaltyInfoForSale(address receiver, uint256 royalty)
