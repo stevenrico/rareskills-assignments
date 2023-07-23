@@ -111,7 +111,8 @@ contract StakerERC721 is ERC721, ERC2981, Ownable2Step {
         view
         returns (bool)
     {
-        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(ticketId, user))));
+        bytes32 leaf =
+            keccak256(bytes.concat(keccak256(abi.encode(ticketId, user))));
 
         return MerkleProof.verify(proof, _root, leaf);
     }
