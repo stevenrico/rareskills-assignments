@@ -63,7 +63,7 @@ contract StakerERC721Test is Test {
     }
 
     function _itRevertsWhenIncorrectAmountSent(address user) private {
-        vm.expectRevert("Staker: incorrect amount sent for mint");
+        vm.expectRevert("StakerERC721: incorrect amount sent for mint");
         vm.prank(user);
         _staker.mint{ value: 0.5 ether }();
     }
@@ -75,7 +75,7 @@ contract StakerERC721Test is Test {
             _staker.mint{ value: MINT_PRICE }();
         }
 
-        vm.expectRevert("Staker: tokens are sold out");
+        vm.expectRevert("StakerERC721: tokens are sold out");
         _staker.mint{ value: MINT_PRICE }();
 
         vm.stopPrank();

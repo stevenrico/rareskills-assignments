@@ -61,9 +61,9 @@ contract StakerERC721 is ERC721, ERC2981, Ownable2Step {
 
     function mint() external payable {
         require(
-            msg.value == _mintPrice, "Staker: incorrect amount sent for mint"
+            msg.value == _mintPrice, "StakerERC721: incorrect amount sent for mint"
         );
-        require(_publicMintIndex <= MAX_SUPPLY, "Staker: tokens are sold out");
+        require(_publicMintIndex <= MAX_SUPPLY, "StakerERC721: tokens are sold out");
 
         _safeMint(msg.sender, _publicMintIndex);
 
