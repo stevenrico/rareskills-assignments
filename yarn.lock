@@ -484,6 +484,14 @@ __metadata:
   languageName: node
   linkType: hard
 
+"rarekills-assignments@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "rarekills-assignments@workspace:."
+  dependencies:
+    solhint: ^3.4.1
+  languageName: unknown
+  linkType: soft
+
 "require-from-string@npm:^2.0.2":
   version: 2.0.2
   resolution: "require-from-string@npm:2.0.2"
@@ -639,11 +647,3 @@ __metadata:
   checksum: 159da4805f7e84a3d003d8841557196034155008f817172d4e986bd591f74aa82aa7db55929a54222309e01079a65a92a9e6414da5a6aa4b01ee44a511ac3ee5
   languageName: node
   linkType: hard
-
-"yul@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "yul@workspace:."
-  dependencies:
-    solhint: ^3.4.1
-  languageName: unknown
-  linkType: soft
