@@ -82,6 +82,80 @@ contract EscrowTest is Test {
         _itTransfersToEscrow(_token, address(_escrow), amount);
     }
 
+    function _itRevertsIfCallerIsNotBuyer(
+        address buyer,
+        address token,
+        address seller
+    ) private {
+        vm.expectRevert("Escrow: unauthorized access to deposit");
+        vm.prank(buyer);
+        _escrow.reject(token, seller);
+    }
+
+    function _itRevertsIfNotRejectedWithinThreeDays(
+        address buyer,
+        address token,
+        address seller
+    ) private {
+        vm.expectRevert("Escrow: unable to reject");
+        vm.prank(buyer);
+        _escrow.reject(token, seller);
+    }
+
+    function _itDeletesDeposit(address token, address seller) private {
+        Escrow.Deposit memory deposit = _escrow.getDeposit(token, seller);
+
+        assertEq(deposit.depositor, address(0));
+        assertEq(deposit.amount, 0);
+        assertEq(deposit.createdAt, 0);
+    }
+
+    function _itTransfersDepositToBuyer(
+        address buyer,
+        MockERC20 token,
+        address seller,
+        uint256 expectedAmount
+    ) private {
+        vm.prank(buyer);
+        _escrow.reject(address(token), seller);
+
+        assertEq(token.balanceOf(buyer), expectedAmount);
+    }
+
+    function _itRevertsWhenSellerAttemptsToWithdraw(
+        address seller,
+        address token
+    ) private {
+        vm.expectRevert("Escrow: deposit does not exist");
+        vm.prank(seller);
+        _escrow.withdraw(token);
+    }
+
+    function testReject() external {
+        uint256 amount = 50 * _scale;
+
+        vm.startPrank(_buyer);
+
+        _token.approve(address(_escrow), amount);
+        _escrow.deposit(address(_token), _seller, amount);
+
+        vm.stopPrank();
+
+        uint256 currentTimestamp = block.timestamp;
+
+        _itRevertsIfCallerIsNotBuyer(_unauthorized, address(_token), _seller);
+
+        vm.warp(currentTimestamp + 3 days);
+        _itRevertsIfNotRejectedWithinThreeDays(_buyer, address(_token), _seller);
+
+        vm.warp(currentTimestamp + 1 days);
+        _itTransfersDepositToBuyer(_buyer, _token, _seller, amount);
+        _itDeletesDeposit(address(_token), _seller);
+
+        vm.warp(currentTimestamp + 3 days);
+        _itRevertsWhenSellerAttemptsToWithdraw(_seller, address(_token));
+    }
+
     function _itRevertsWithIncorrectTokenContract(address seller) private {
         vm.expectRevert("Escrow: deposit does not exist");
         vm.prank(seller);

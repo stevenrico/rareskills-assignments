@@ -32,6 +32,25 @@ contract Escrow {
         return _deposits[token][seller];
     }
 
+    function reject(address token, address seller) external {
+        Deposit memory buyerDeposit = _deposits[token][seller];
+
+        require(
+            buyerDeposit.depositor == msg.sender,
+            "Escrow: unauthorized access to deposit"
+        );
+        require(
+            block.timestamp - buyerDeposit.createdAt < WITHDRAWAL_DELAY,
+            "Escrow: unable to reject"
+        );
+
+        bool success = IERC20(token).transfer(msg.sender, buyerDeposit.amount);
+
+        if (success) {
+            delete _deposits[token][seller];
+        }
+    }
+
     function withdraw(address token) external {
         Deposit memory buyerDeposit = _deposits[token][msg.sender];
 
