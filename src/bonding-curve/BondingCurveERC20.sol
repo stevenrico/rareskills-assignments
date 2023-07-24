@@ -34,11 +34,9 @@ contract BondingCurveERC20 is ERC20 {
     uint256 private _reserveRatio;
     uint256 private _slope;
 
-    constructor(
-        address reserveToken,
-        uint256 reserveRatio,
-        uint256 slope
-    ) ERC20("Bonding Curve", "BC20") {
+    constructor(address reserveToken, uint256 reserveRatio, uint256 slope)
+        ERC20("Bonding Curve", "BC20")
+    {
         ReserveToken = IERC20(reserveToken);
 
         _reserveRatio = reserveRatio;
@@ -124,13 +122,13 @@ contract BondingCurveERC20 is ERC20 {
             UD60x18 udReserveBalance = ud(reserveBalance);
             UD60x18 udTokenSupply = ud(tokenSupply);
             UD60x18 one = ud(1 * SCALE);
-    
+
             UD60x18 base = one.add(udDepositAmount.div(udReserveBalance));
-    
+
             UD60x18 result = base.pow(udReserveRatio);
             result = result.sub(one);
             result = udTokenSupply.mul(result);
-    
+
             return result.intoUint256();
         }
     }
