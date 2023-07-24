@@ -31,4 +31,16 @@ contract Escrow {
     {
         return _deposits[token][seller];
     }
+
+    function withdraw(address token) external {
+        Deposit memory buyerDeposit = _deposits[token][msg.sender];
+
+        require(buyerDeposit.amount > 0, "Escrow: deposit does not exist");
+        require(
+            block.timestamp - WITHDRAWAL_DELAY >= buyerDeposit.createdAt,
+            "Escrow: not able to withdraw"
+        );
+
+        IERC20(token).transfer(msg.sender, buyerDeposit.amount);
+    }
 }

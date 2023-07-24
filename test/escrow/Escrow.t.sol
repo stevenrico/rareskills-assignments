@@ -17,6 +17,7 @@ contract EscrowTest is Test {
 
     address private _buyer;
     address private _seller;
+    address private _unauthorized;
 
     function setUp() public {
         _owner = vm.addr(100);
@@ -40,6 +41,9 @@ contract EscrowTest is Test {
         _seller = vm.addr(102);
         vm.label(_seller, "SELLER");
         vm.deal(_seller, 100 ether);
+        _unauthorized = vm.addr(103);
+        vm.label(_unauthorized, "UNAUTHORIZED");
+        vm.deal(_unauthorized, 100 ether);
     }
 
     function _itStoresADeposit(
@@ -76,5 +80,56 @@ contract EscrowTest is Test {
 
         _itStoresADeposit(_buyer, address(_token), _seller, amount);
         _itTransfersToEscrow(_token, address(_escrow), amount);
+    }
+
+    function _itRevertsWithIncorrectTokenContract(address seller) private {
+        vm.expectRevert("Escrow: deposit does not exist");
+        vm.prank(seller);
+        _escrow.withdraw(address(0));
+    }
+
+    function _itRevertsWithIncorrectSeller(address seller, address token)
+        private
+    {
+        vm.expectRevert("Escrow: deposit does not exist");
+        vm.prank(seller);
+        _escrow.withdraw(token);
+    }
+
+    function _itRevertsBeforeThreeDays(address seller, address token) private {
+        vm.expectRevert("Escrow: not able to withdraw");
+        vm.prank(seller);
+        _escrow.withdraw(token);
+    }
+
+    function _itTransfersAmountAfterThreeDays(
+        address seller,
+        MockERC20 token,
+        uint256 expectedAmount
+    ) private {
+        vm.warp(block.timestamp + 3 days);
+
+        vm.prank(seller);
+        _escrow.withdraw(address(token));
+
+        assertEq(token.balanceOf(seller), expectedAmount);
+    }
+
+    function testWithdraw() external {
+        uint256 amount = 50 * _scale;
+
+        vm.warp(block.timestamp + 5 days);
+
+        vm.startPrank(_buyer);
+
+        _token.approve(address(_escrow), amount);
+        _escrow.deposit(address(_token), _seller, amount);
+
+        vm.stopPrank();
+
+        _itRevertsWithIncorrectTokenContract(_seller);
+        _itRevertsWithIncorrectSeller(_unauthorized, address(_token));
+        _itRevertsBeforeThreeDays(_seller, address(_token));
+        _itTransfersAmountAfterThreeDays(_seller, _token, amount);
     }
 }
