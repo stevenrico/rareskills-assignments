@@ -36,6 +36,10 @@ contract StakerERC721 is ERC721, ERC2981, Ownable2Step {
         _setDefaultRoyalty(address(this), royaltyFee);
 
         _root = root;
+
+        for (uint256 i = 1; i <= MAX_SUPPLY; i++) {
+            _claims.set(i);
+        }
     }
 
     function supportsInterface(bytes4 interfaceId)
@@ -95,11 +99,11 @@ contract StakerERC721 is ERC721, ERC2981, Ownable2Step {
             "StakerERC721: not eligible for discount"
         );
         require(
-            !_claims.get(ticketId), "StakerERC721: discount has been claimed"
+            _claims.get(ticketId), "StakerERC721: discount has been claimed"
         );
 
         _safeMint(msg.sender, _totalSupply);
-        _claims.set(ticketId);
+        _claims.unset(ticketId);
     }
 
     function totalSupply() external view returns (uint256) {
