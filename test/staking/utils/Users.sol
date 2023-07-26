@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import { Test } from "@forge-std/Test.sol";
+import { Vm } from "@forge-std/Vm.sol";
 
 import { Strings } from "@openzeppelin/utils/Strings.sol";
 
-contract UsersSetup is Test {
+contract Users {
+    Vm private constant _vm =
+        Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
     uint256 private _userGroupIndex = 1000;
 
     struct UserGroup {
@@ -13,7 +16,7 @@ contract UsersSetup is Test {
         uint256 index;
     }
 
-    mapping(uint256 id => UserGroup) private _userGroups;
+    mapping(uint256 id => UserGroup userGroup) private _userGroups;
 
     function _createUserGroup(string memory name) internal returns (uint256) {
         require(
@@ -92,14 +95,14 @@ contract UsersSetup is Test {
         uint256 privateKey = group.index;
         group.index++;
 
-        address user = vm.addr(privateKey);
-        vm.label(
+        address user = _vm.addr(privateKey);
+        _vm.label(
             user,
             string.concat(
                 "[", group.name, "|", Strings.toString(privateKey), "]"
             )
         );
-        vm.deal(user, etherAmount);
+        _vm.deal(user, etherAmount);
 
         return user;
     }
@@ -116,9 +119,9 @@ contract UsersSetup is Test {
         uint256 privateKey = group.index;
         group.index++;
 
-        address user = vm.addr(privateKey);
-        vm.label(user, string.concat("[", group.name, "|", customLabel, "]"));
-        vm.deal(user, etherAmount);
+        address user = _vm.addr(privateKey);
+        _vm.label(user, string.concat("[", group.name, "|", customLabel, "]"));
+        _vm.deal(user, etherAmount);
 
         return user;
     }

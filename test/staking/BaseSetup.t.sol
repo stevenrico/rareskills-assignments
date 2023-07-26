@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import { UsersSetup } from "./utils/UsersSetup.t.sol";
+import { Test } from "@forge-std/Test.sol";
+import { Users } from "./utils/Users.sol";
 
 import { Staking } from "contracts/staking/Staking.sol";
 import { StakerERC721 } from "contracts/staking/StakerERC721.sol";
@@ -9,7 +10,7 @@ import { RewardERC20 } from "contracts/staking/RewardERC20.sol";
 
 import { Strings } from "@openzeppelin/utils/Strings.sol";
 
-contract BaseSetup is UsersSetup {
+contract BaseSetup is Test, Users {
     Staking internal __staking;
     StakerERC721 internal __staker;
     RewardERC20 internal __reward;
