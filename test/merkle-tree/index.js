@@ -6,11 +6,11 @@ import fs from "fs"
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const values = [
-  ["1", "0x88c0e901bd1fd1a77bda342f0d2210fdc71cef6b"],
-  ["2", "0x88c0e901bd1fd1a77bda342f0d2210fdc71cef6b"],
-  ["3", "0x88c0e901bd1fd1a77bda342f0d2210fdc71cef6b"],
-  ["4", "0x7231c364597f3bfdb72cf52b197cc59111e71794"],
-  ["5", "0x043aed06383f290ee28fa02794ec7215ca099683"],
+  ["1", "0xf6c0eB696e44d15E8dceb3B63A6535e469Be6C62"],
+  ["2", "0xf6c0eB696e44d15E8dceb3B63A6535e469Be6C62"],
+  ["3", "0xf6c0eB696e44d15E8dceb3B63A6535e469Be6C62"],
+  ["4", "0x738cebC8ea48635272B2BDE7b7321fD0D6c580d9"],
+  ["5", "0x76D76E706f1AB8839738d303C0AB41B4DCE0fc42"],
 ]
 
 function generateRootAndProofs(values) {
