@@ -3,10 +3,11 @@ pragma solidity ^0.8.19;
 
 import { PairBase } from "./Base.t.sol";
 
+import { IERC20 } from "@openzeppelin/token/ERC20/IERC20.sol";
 import { Math } from "@openzeppelin/utils/math/Math.sol";
 
-import { IERC20 } from "@openzeppelin/token/ERC20/IERC20.sol";
 import { Pair } from "contracts/core/Pair.sol";
+import { Utils } from "contracts/libraries/Utils.sol";
 
 contract SwapTest is PairBase {
     event Swap(
@@ -41,7 +42,8 @@ contract SwapTest is PairBase {
         uint256 traderBalanceB = _tokenDistributions[tokenB][trader];
 
         uint256 amountAIn = traderBalanceA;
-        uint256 amountBOut = amountAIn * reserveB / (amountAIn + reserveA);
+        // [Q] Is there a risk of error?
+        uint256 amountBOut = Utils.calculateAmountOut(amountAIn, reserveA, reserveB);
 
         vm.startPrank(trader);
 
@@ -86,7 +88,8 @@ contract SwapTest is PairBase {
         uint256 traderBalanceB = _tokenDistributions[address(tokenB)][trader];
 
         uint256 amountBIn = traderBalanceB;
-        uint256 amountAOut = amountBIn * reserveA / (amountBIn + reserveB);
+        // [Q] Is there a risk of error?
+        uint256 amountAOut = Utils.calculateAmountOut(amountBIn, reserveB, reserveA);
 
         vm.startPrank(trader);
 
@@ -237,10 +240,8 @@ contract SwapTest is PairBase {
 
         address trader = _traders[0];
 
-        uint256 traderBalanceA = _tokenDistributions[address(tokenA)][trader];
-
-        uint256 amountAIn = traderBalanceA;
-        uint256 amountBOut = amountAIn * reserveB / (amountAIn + reserveA);
+        uint256 amountBOut = _tokenDistributions[tokenB][trader];
+        uint256 amountAIn = Utils.calculateAmountIn(amountBOut, reserveA, reserveB);
 
         vm.startPrank(trader);
 
@@ -269,10 +270,8 @@ contract SwapTest is PairBase {
 
         address trader = _traders[0];
 
-        uint256 traderBalanceB = _tokenDistributions[address(tokenB)][trader];
-
-        uint256 amountBIn = traderBalanceB;
-        uint256 amountAOut = amountBIn * reserveA / (amountBIn + reserveB);
+        uint256 amountAOut = _tokenDistributions[tokenA][trader];
+        uint256 amountBIn = Utils.calculateAmountIn(amountAOut, reserveB, reserveA);
 
         vm.startPrank(trader);
 

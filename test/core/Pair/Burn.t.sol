@@ -6,6 +6,8 @@ import { PairBase } from "./Base.t.sol";
 import { IERC20 } from "@openzeppelin/token/ERC20/IERC20.sol";
 import { Math } from "@openzeppelin/utils/math/Math.sol";
 
+import { Utils } from "contracts/libraries/Utils.sol";
+
 contract BurnTest is PairBase {
     event Burn(
         address indexed sender,
@@ -64,7 +66,7 @@ contract BurnTest is PairBase {
         address trader = _traders[0];
 
         uint256 amountAIn = _tokenDistributions[tokenA][trader];
-        uint256 amountBOut = amountAIn * amountB / (amountAIn + amountA);
+        uint256 amountBOut = Utils.calculateAmountOut(amountAIn, amountA, amountB);
 
         vm.startPrank(trader);
 
