@@ -17,11 +17,11 @@ library Utils {
         returns (uint256 reserve0, uint256 reserve1)
     {
         (address tokenA,) = sortTokens(token0, token1);
-        (uint256 reserveA, uint256 reserveB) = IPair(pair).getReserves();
+        (uint256 reserveA, uint256 reserveB,) = IPair(pair).getReserves();
         (reserve0, reserve1) =
             token0 == tokenA ? (reserveA, reserveB) : (reserveB, reserveA);
     }
-    
+
     /**
      * @dev Calculates the amount to be sent out from a swap, including a fee
      *

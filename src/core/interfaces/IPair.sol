@@ -8,7 +8,7 @@ interface IPair {
     event Swap(address indexed sender, address indexed recipient, uint256 amountAIn, uint256 amountAOut, uint256 amountBIn, uint256 amountBOut);
 
     function getTokens() external returns (address, address);
-    function getReserves() external returns (uint256, uint256);
+    function getReserves() external returns (uint112 reserveA, uint112 reserveB, uint32 blockTimestampLast);
 
     function mint(address recipient) external returns (uint256 liquidtyTokens);
 

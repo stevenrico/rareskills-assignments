@@ -16,7 +16,7 @@ contract PairBase is BaseTest {
         uint256 expectedAmountA,
         uint256 expectedAmountB
     ) internal {
-        (uint256 reserveA, uint256 reserveB) = pair.getReserves();
+        (uint256 reserveA, uint256 reserveB,) = pair.getReserves();
 
         assertEq(reserveA, expectedAmountA);
         assertEq(reserveB, expectedAmountB);

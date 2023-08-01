@@ -6,6 +6,7 @@ import { SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Math } from "@openzeppelin/utils/math/Math.sol";
 
 import { IPair } from "contracts/core/interfaces/IPair.sol";
+import { UQ112x112 } from "contracts/libraries/UQ112x112.sol";
 import { LiquidityTokenERC20 } from "contracts/core/LiquidityTokenERC20.sol";
 
 /**
@@ -22,11 +23,17 @@ import { LiquidityTokenERC20 } from "contracts/core/LiquidityTokenERC20.sol";
  * It uses 'SafeERC20.safeTransfer(token, to, value);' for transfers.
  */
 contract Pair is IPair, LiquidityTokenERC20 {
+    using UQ112x112 for uint224;
+
     address private _tokenA;
     address private _tokenB;
 
-    uint256 private _reserveA;
-    uint256 private _reserveB;
+    uint112 private _reserveA; // uses single storage slot, accessible via getReserves
+    uint112 private _reserveB; // uses single storage slot, accessible via getReserves
+    uint32 private _blockTimestampLast; // uses single storage slot, accessible via getReserves
+
+    uint256 private _priceACumulativeLast;
+    uint256 private _priceBCumulativeLast;
 
     /**
      * @dev Set the value for {tokenA} and {tokenB}.
@@ -52,8 +59,14 @@ contract Pair is IPair, LiquidityTokenERC20 {
      * @return reserveA         The amount of reserve A.
      * @return reserveB         The amount of reserve B.
      */
-    function getReserves() public view returns (uint256, uint256) {
-        return (_reserveA, _reserveB);
+    function getReserves()
+        public
+        view
+        returns (uint112 reserveA, uint112 reserveB, uint32 blockTimestampLast)
+    {
+        reserveA = _reserveA;
+        reserveB = _reserveB;
+        blockTimestampLast = _blockTimestampLast;
     }
 
     /**
@@ -62,9 +75,59 @@ contract Pair is IPair, LiquidityTokenERC20 {
      * @param balanceA          The balance of token A owned by the contract.
      * @param balanceB          The balance of token B owned by the contract.
      */
-    function _update(uint256 balanceA, uint256 balanceB) private {
-        _reserveA = balanceA;
-        _reserveB = balanceB;
+    function _update(
+        uint256 balanceA,
+        uint256 balanceB,
+        uint112 reserveA,
+        uint112 reserveB
+    ) private {
+        uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
+        uint32 timeElapsed;
+        
+        unchecked {
+            timeElapsed = blockTimestamp - _blockTimestampLast; // overflow is desired
+        }
+
+        if (timeElapsed > 0 && reserveA != 0 && reserveB != 0) {
+            /**
+             * [Q1] How much of a token with 18 decimals can your contract store?
+             *
+             * [A1] Max number of uint112 divided by 1e18:
+             *
+             * max112 = type(uint112).max => 5192296858534827628530496329220095
+             *
+             * result = max112 / 1e18 => 5192296858534828
+             *
+             * [Q2], what's the reason for:
+             *   (X) = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB)) * timeElapsed
+             * Instead of:
+             *   (Y) = uint256(UQ112x112.encode(reserveA * timeElapsed).uqdiv(reserveB))
+             *
+             * [A2] If (Y) max number in reserveA would be limited to:
+             *
+             * max112 = type(uint112).max => 5192296858534827628530496329220095
+             * max32 = type(uint32).max => 4294967295
+             *
+             * maxReserveA = max112 / max32 => 1208925819896104151482368
+             *
+             * [Q2.1] Find the smallest uint type:
+             *
+             * 1208925819896104151482368 = 2^n - 1
+             *
+             * n = log2(1208925819896104151482368 + 1)
+             * n = 80.00000000033590
+             *
+             * [A2.1] uint88
+             *
+             * Resource: https://docs.soliditylang.org/en/v0.8.20/types.html#integers
+             */
+            _priceACumulativeLast += uint256(UQ112x112.encode(reserveA).uqdiv(reserveB)) * timeElapsed;
+            _priceBCumulativeLast += uint256(UQ112x112.encode(reserveB).uqdiv(reserveA)) * timeElapsed;
+        }
+
+        _reserveA = uint112(balanceA);
+        _reserveB = uint112(balanceB);
+        _blockTimestampLast = blockTimestamp;
     }
 
     /**
@@ -95,7 +158,7 @@ contract Pair is IPair, LiquidityTokenERC20 {
         external
         returns (uint256 liquidityTokens)
     {
-        (uint256 reserveA, uint256 reserveB) = getReserves();
+        (uint112 reserveA, uint112 reserveB,) = getReserves();
 
         uint256 balanceA = IERC20(_tokenA).balanceOf(address(this));
         uint256 balanceB = IERC20(_tokenB).balanceOf(address(this));
@@ -115,7 +178,7 @@ contract Pair is IPair, LiquidityTokenERC20 {
 
         _mint(recipient, liquidityTokens);
 
-        _update(balanceA, balanceB);
+        _update(balanceA, balanceB, reserveA, reserveB);
 
         emit Mint(msg.sender, amountA, amountB);
     }
@@ -162,7 +225,9 @@ contract Pair is IPair, LiquidityTokenERC20 {
         balanceA = IERC20(_tokenA).balanceOf(address(this));
         balanceB = IERC20(_tokenB).balanceOf(address(this));
 
-        _update(balanceA, balanceB);
+        (uint112 reserveA, uint112 reserveB,) = getReserves();
+
+        _update(balanceA, balanceB, reserveA, reserveB);
 
         emit Burn(msg.sender, recipient, amountA, amountB);
     }
@@ -197,7 +262,7 @@ contract Pair is IPair, LiquidityTokenERC20 {
             amountAOut > 0 || amountBOut > 0, "Pair: Insufficient output amount"
         );
 
-        (uint256 reserveA, uint256 reserveB) = getReserves();
+        (uint112 reserveA, uint112 reserveB,) = getReserves();
 
         require(
             amountAOut < reserveA && amountBOut < reserveB,
@@ -238,17 +303,18 @@ contract Pair is IPair, LiquidityTokenERC20 {
             balanceB = IERC20(tokenB).balanceOf(address(this));
         }
 
-        uint256 amountAIn =
-            balanceA > reserveA - amountAOut ? balanceA - (reserveA - amountAOut) : 0;
-        uint256 amountBIn =
-            balanceB > reserveB - amountBOut ? balanceB - (reserveB - amountBOut) : 0;
+        uint256 amountAIn = balanceA > reserveA - amountAOut
+            ? balanceA - (reserveA - amountAOut)
+            : 0;
+        uint256 amountBIn = balanceB > reserveB - amountBOut
+            ? balanceB - (reserveB - amountBOut)
+            : 0;
 
         require(
             amountAIn > 0 || amountBIn > 0, "Pair: Insufficient input amount"
         );
 
         {
-
             /**
              * There's an extra 0.03% fee in the balances, remove the fee in order to compare
              * with previous K.
@@ -278,16 +344,15 @@ contract Pair is IPair, LiquidityTokenERC20 {
              */
             uint256 adjustedBalanceA = (balanceA * 1000) - (amountAIn * 3);
             uint256 adjustedBalanceB = (balanceB * 1000) - (amountBIn * 3);
-    
-            uint256 previousK = (reserveA * reserveB) * 1000 ** 2;
+            
+            uint256 previousK = (uint256(reserveA) * reserveB) * 1000 ** 2;
             uint256 currentK = adjustedBalanceA * adjustedBalanceB;
-    
+
             // [Q] Should it be `currentK == previousK`?
             require(previousK <= currentK, "Pair: K");
         }
 
-
-        _update(balanceA, balanceB);
+        _update(balanceA, balanceB, reserveA, reserveB);
 
         emit Swap(
             msg.sender, recipient, amountAIn, amountAOut, amountBIn, amountBOut
