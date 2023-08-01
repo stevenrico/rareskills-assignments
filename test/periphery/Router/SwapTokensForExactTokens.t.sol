@@ -43,7 +43,8 @@ contract SwapTokensForExactTokens is BaseTest {
         uint256 traderBalanceB = _tokenDistributions[tokenB][trader];
 
         uint256 amountAOut = traderBalanceA;
-        uint256 amountBIn = Utils.calculateAmountIn(amountAOut, reserveB, reserveA);
+        uint256 amountBIn =
+            Utils.calculateAmountIn(amountAOut, reserveB, reserveA);
 
         {
             // [ERROR] Stack too deep
@@ -134,8 +135,8 @@ contract SwapTokensForExactTokens is BaseTest {
         tokens[1] = tokenA;
 
         uint256 amountAOut = _tokenDistributions[tokenA][trader];
-        uint256 amountBIn = Utils.calculateAmountIn(amountAOut, reserveB, reserveA);
-
+        uint256 amountBIn =
+            Utils.calculateAmountIn(amountAOut, reserveB, reserveA);
 
         uint256 oneToken = 1 * _scales[tokenB];
 

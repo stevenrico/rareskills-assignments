@@ -66,7 +66,8 @@ contract BurnTest is PairBase {
         address trader = _traders[0];
 
         uint256 amountAIn = _tokenDistributions[tokenA][trader];
-        uint256 amountBOut = Utils.calculateAmountOut(amountAIn, amountA, amountB);
+        uint256 amountBOut =
+            Utils.calculateAmountOut(amountAIn, amountA, amountB);
 
         vm.startPrank(trader);
 

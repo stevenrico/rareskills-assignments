@@ -120,7 +120,8 @@ contract Router {
             reserveIn > 0 && reserveOut > 0, "Router: Insufficient liquidity"
         );
 
-        uint256 amountOut = Utils.calculateAmountOut(amountIn, reserveIn, reserveOut);
+        uint256 amountOut =
+            Utils.calculateAmountOut(amountIn, reserveIn, reserveOut);
 
         require(amountOut > amountOutMin, "Router: Insufficient output amount");
 
@@ -182,7 +183,8 @@ contract Router {
         );
 
         // [Q] Why is it necessary to add 1?
-        uint256 amountIn = Utils.calculateAmountIn(amountOut, reserveIn, reserveOut);
+        uint256 amountIn =
+            Utils.calculateAmountIn(amountOut, reserveIn, reserveOut);
 
         require(amountIn < amountInMax, "Router: Excessive input amount");
 

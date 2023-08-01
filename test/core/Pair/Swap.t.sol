@@ -43,7 +43,8 @@ contract SwapTest is PairBase {
 
         uint256 amountAIn = traderBalanceA;
         // [Q] Is there a risk of error?
-        uint256 amountBOut = Utils.calculateAmountOut(amountAIn, reserveA, reserveB);
+        uint256 amountBOut =
+            Utils.calculateAmountOut(amountAIn, reserveA, reserveB);
 
         vm.startPrank(trader);
 
@@ -89,7 +90,8 @@ contract SwapTest is PairBase {
 
         uint256 amountBIn = traderBalanceB;
         // [Q] Is there a risk of error?
-        uint256 amountAOut = Utils.calculateAmountOut(amountBIn, reserveB, reserveA);
+        uint256 amountAOut =
+            Utils.calculateAmountOut(amountBIn, reserveB, reserveA);
 
         vm.startPrank(trader);
 
@@ -241,7 +243,8 @@ contract SwapTest is PairBase {
         address trader = _traders[0];
 
         uint256 amountBOut = _tokenDistributions[tokenB][trader];
-        uint256 amountAIn = Utils.calculateAmountIn(amountBOut, reserveA, reserveB);
+        uint256 amountAIn =
+            Utils.calculateAmountIn(amountBOut, reserveA, reserveB);
 
         vm.startPrank(trader);
 
@@ -271,7 +274,8 @@ contract SwapTest is PairBase {
         address trader = _traders[0];
 
         uint256 amountAOut = _tokenDistributions[tokenA][trader];
-        uint256 amountBIn = Utils.calculateAmountIn(amountAOut, reserveB, reserveA);
+        uint256 amountBIn =
+            Utils.calculateAmountIn(amountAOut, reserveB, reserveA);
 
         vm.startPrank(trader);
 
