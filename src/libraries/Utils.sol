@@ -21,7 +21,17 @@ library Utils {
         (reserve0, reserve1) =
             token0 == tokenA ? (reserveA, reserveB) : (reserveB, reserveA);
     }
-
+    
+    /**
+     * @dev Calculates the amount to be sent out from a swap, including a fee
+     *
+     * With a 0.03% fee:
+     * Without Fee:     49504950495049504950
+     * With Fee:        49357901719853064942
+     *
+     * This calculates a reduction of 0.03% that the user receives from the swap,
+     * meaning the token SENT IN is accepted as the fee in the swap.
+     */
     function calculateAmountOut(
         uint256 amountIn,
         uint256 reserveIn,
@@ -32,12 +42,24 @@ library Utils {
             reserveIn > 0 && reserveOut > 0, "Utils: Insufficient liquidity"
         );
 
-        uint256 numerator = reserveOut * amountIn;
-        uint256 denominator = reserveIn + amountIn;
+        uint256 amountInWithFee = amountIn * 997;
+
+        uint256 numerator = reserveOut * amountInWithFee;
+        uint256 denominator = (reserveIn * 1000) + amountInWithFee;
 
         amountOut = numerator / denominator;
     }
 
+    /**
+     * @dev Calculates the amount to be sent in for a swap, including a fee
+     *
+     * With a 0.03% fee:
+     * Without Fee:     50505050505050505051
+     * With Fee:        50657021569759784404
+     *
+     * This calculates an addition of 0.03% that the user sends into the swap,
+     * meaning the token SENT IN is accepted as the fee in the swap.
+     */
     function calculateAmountIn(
         uint256 amountOut,
         uint256 reserveIn,
@@ -48,8 +70,8 @@ library Utils {
             reserveIn > 0 && reserveOut > 0, "Utils: Insufficient liquidity"
         );
 
-        uint256 numerator = reserveIn * amountOut;
-        uint256 denominator = reserveOut - amountOut;
+        uint256 numerator = (reserveIn * amountOut) * 1000;
+        uint256 denominator = (reserveOut - amountOut) * 997;
 
         amountIn = (numerator / denominator) + 1;
     }

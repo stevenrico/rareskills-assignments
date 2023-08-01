@@ -216,6 +216,17 @@ contract Pair is IPair, LiquidityTokenERC20 {
                 "Pair: Invalid recipient"
             );
 
+            /**
+             * For swapExactTokensForTokens:        (/src/periphery/Router.sol:106)
+             * - amountIn has NOT been reduced
+             * - amountOut has been reduced by 0.03%
+             *
+             * For swapTokensForExactTokens:        (/src/periphery/Router.sol:167)
+             * - amountIn has been increased by 0.03%
+             * - amountOut has NOT been reduced
+             *
+             * So balanceA and balanceB have the fee already included.
+             */
             if (amountAOut > 0) {
                 SafeERC20.safeTransfer(IERC20(tokenA), recipient, amountAOut);
             }
@@ -228,19 +239,53 @@ contract Pair is IPair, LiquidityTokenERC20 {
         }
 
         uint256 amountAIn =
-            balanceA > reserveA - amountAOut ? balanceA - reserveA : 0;
+            balanceA > reserveA - amountAOut ? balanceA - (reserveA - amountAOut) : 0;
         uint256 amountBIn =
-            balanceB > reserveB - amountBOut ? balanceB - reserveB : 0;
+            balanceB > reserveB - amountBOut ? balanceB - (reserveB - amountBOut) : 0;
 
         require(
             amountAIn > 0 || amountBIn > 0, "Pair: Insufficient input amount"
         );
 
-        uint256 previousK = reserveA * reserveB;
-        uint256 currentK = balanceA * balanceB;
+        {
 
-        // [Q] Should it be `currentK == previousK`?
-        require(previousK <= currentK, "Pair: K");
+            /**
+             * There's an extra 0.03% fee in the balances, remove the fee in order to compare
+             * with previous K.
+             *
+             * [Q] Why 'balance - (amountIn * 3)'?
+             *
+             * [A] For 'calculateAmountOut' (/src/libraries/Utils.sol:34) and
+             * 'calculateAmountIn' (/src/libraries/Utils.sol:62) the fee is applied to the token
+             * being SENT IN to the swap, so we use 'amountIn' to calculate the adjustment.
+             *
+             * reserveA = 1000e18
+             * reserveB = 1000e18
+             *
+             * amountAIn = 10e18
+             * amountBOut = 9871580343970612988
+             *
+             * balanceA = 1010e18
+             * balanceB = 990128419656029387012
+             *
+             * Calculations for 'balance - (amountIn * 3)':
+             *
+             * adjustedBalanceA = (1010e18 * 1000) - (10e18 * 3) => 1009970000000000000000000
+             * adjustedBalanceB = 990128419656029387012 * 1000 => 990128419656029387012000
+             *
+             * previousK = (1000e18 * 1000e18) * 1000^2 => 1e48
+             * currentK = 9_800 * 9_901.284196560295 => 1.00000000000000000000050964e48
+             */
+            uint256 adjustedBalanceA = (balanceA * 1000) - (amountAIn * 3);
+            uint256 adjustedBalanceB = (balanceB * 1000) - (amountBIn * 3);
+    
+            uint256 previousK = (reserveA * reserveB) * 1000 ** 2;
+            uint256 currentK = adjustedBalanceA * adjustedBalanceB;
+    
+            // [Q] Should it be `currentK == previousK`?
+            require(previousK <= currentK, "Pair: K");
+        }
+
 
         _update(balanceA, balanceB);
 
