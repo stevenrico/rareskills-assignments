@@ -7,8 +7,8 @@ interface IPair {
     event Burn(address indexed sender, address indexed recipient, uint256 amountA, uint256 amountB);
     event Swap(address indexed sender, address indexed recipient, uint256 amountAIn, uint256 amountAOut, uint256 amountBIn, uint256 amountBOut);
 
-    function getTokens() external returns (address, address);
-    function getReserves() external returns (uint112 reserveA, uint112 reserveB, uint32 blockTimestampLast);
+    function getTokens() external view returns (address, address);
+    function getReserves() external view returns (uint112 reserveA, uint112 reserveB, uint32 blockTimestampLast);
     function getPriceCumulatives() external view returns (uint256 priceACumulative, uint256 priceBCumulative);
 
     function mint(address recipient) external returns (uint256 liquidtyTokens);
