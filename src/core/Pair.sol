@@ -37,6 +37,15 @@ contract Pair is IPair, LiquidityTokenERC20 {
     uint256 private _priceACumulativeLast;
     uint256 private _priceBCumulativeLast;
 
+    uint256 private _unlocked = 1;
+
+    modifier lock() {
+        require(_unlocked == 1, "Pair: LOCKED");
+        _unlocked = 0;
+        _;
+        _unlocked = 1;
+    }
+
     /**
      * @dev Set the value for {tokenA} and {tokenB}.
      */
@@ -182,6 +191,7 @@ contract Pair is IPair, LiquidityTokenERC20 {
      */
     function mint(address recipient)
         external
+        lock
         returns (uint256 liquidityTokens)
     {
         (uint112 reserveA, uint112 reserveB,) = getReserves();
@@ -228,6 +238,7 @@ contract Pair is IPair, LiquidityTokenERC20 {
      */
     function burn(address recipient)
         external
+        lock
         returns (uint256 amountA, uint256 amountB)
     {
         uint256 balanceA = IERC20(_tokenA).balanceOf(address(this));
@@ -283,6 +294,7 @@ contract Pair is IPair, LiquidityTokenERC20 {
      */
     function swap(uint256 amountAOut, uint256 amountBOut, address recipient)
         external
+        lock
     {
         require(
             amountAOut > 0 || amountBOut > 0, "Pair: Insufficient output amount"
