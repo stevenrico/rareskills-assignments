@@ -9,6 +9,7 @@ interface IPair {
 
     function getTokens() external returns (address, address);
     function getReserves() external returns (uint112 reserveA, uint112 reserveB, uint32 blockTimestampLast);
+    function getPriceCumulatives() external view returns (uint256 priceACumulative, uint256 priceBCumulative);
 
     function mint(address recipient) external returns (uint256 liquidtyTokens);
 

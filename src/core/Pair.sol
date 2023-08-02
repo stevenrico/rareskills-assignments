@@ -28,10 +28,12 @@ contract Pair is IPair, LiquidityTokenERC20 {
     address private _tokenA;
     address private _tokenB;
 
+    // Resource: https://uniswap.org/whitepaper.pdf (Page 4 - 2.2.1 Precision)
     uint112 private _reserveA; // uses single storage slot, accessible via getReserves
     uint112 private _reserveB; // uses single storage slot, accessible via getReserves
     uint32 private _blockTimestampLast; // uses single storage slot, accessible via getReserves
 
+    // Works with: src/libraries/Oracle.sol
     uint256 private _priceACumulativeLast;
     uint256 private _priceBCumulativeLast;
 
@@ -49,8 +51,13 @@ contract Pair is IPair, LiquidityTokenERC20 {
      * @return tokenA           The address of token A.
      * @return tokenB           The address of token B.
      */
-    function getTokens() external view returns (address, address) {
-        return (_tokenA, _tokenB);
+    function getTokens()
+        external
+        view
+        returns (address tokenA, address tokenB)
+    {
+        tokenA = _tokenA;
+        tokenB = _tokenB;
     }
 
     /**
@@ -70,6 +77,21 @@ contract Pair is IPair, LiquidityTokenERC20 {
     }
 
     /**
+     * @dev Returns the cumulative price of token A and token B.
+     *
+     * @return priceACumulative         The cumulative price of token A.
+     * @return priceBCumulative         The cumulative price of token B.
+     */
+    function getPriceCumulatives()
+        public
+        view
+        returns (uint256 priceACumulative, uint256 priceBCumulative)
+    {
+        priceACumulative = _priceACumulativeLast;
+        priceBCumulative = _priceBCumulativeLast;
+    }
+
+    /**
      * @dev Updates the values of {reserveA} and {reserveB}.
      *
      * @param balanceA          The balance of token A owned by the contract.
@@ -83,7 +105,7 @@ contract Pair is IPair, LiquidityTokenERC20 {
     ) private {
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
         uint32 timeElapsed;
-        
+
         unchecked {
             timeElapsed = blockTimestamp - _blockTimestampLast; // overflow is desired
         }
@@ -96,7 +118,7 @@ contract Pair is IPair, LiquidityTokenERC20 {
              *
              * max112 = type(uint112).max => 5192296858534827628530496329220095
              *
-             * result = max112 / 1e18 => 5192296858534828
+             * result = max112 / 1e18 => 5192296858534827
              *
              * [Q2], what's the reason for:
              *   (X) = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB)) * timeElapsed
@@ -121,8 +143,12 @@ contract Pair is IPair, LiquidityTokenERC20 {
              *
              * Resource: https://docs.soliditylang.org/en/v0.8.20/types.html#integers
              */
-            _priceACumulativeLast += uint256(UQ112x112.encode(reserveA).uqdiv(reserveB)) * timeElapsed;
-            _priceBCumulativeLast += uint256(UQ112x112.encode(reserveB).uqdiv(reserveA)) * timeElapsed;
+            _priceACumulativeLast += uint256(
+                UQ112x112.encode(reserveA).uqdiv(reserveB)
+            ) * timeElapsed;
+            _priceBCumulativeLast += uint256(
+                UQ112x112.encode(reserveB).uqdiv(reserveA)
+            ) * timeElapsed;
         }
 
         _reserveA = uint112(balanceA);
@@ -344,7 +370,7 @@ contract Pair is IPair, LiquidityTokenERC20 {
              */
             uint256 adjustedBalanceA = (balanceA * 1000) - (amountAIn * 3);
             uint256 adjustedBalanceB = (balanceB * 1000) - (amountBIn * 3);
-            
+
             uint256 previousK = (uint256(reserveA) * reserveB) * 1000 ** 2;
             uint256 currentK = adjustedBalanceA * adjustedBalanceB;
 
