@@ -5,6 +5,8 @@ import { IPair } from "contracts/core/Pair.sol";
 import { UQ112x112 } from "./UQ112x112.sol";
 
 library OracleLibrary {
+    using UQ112x112 for uint224;
+    
     // helper function that returns the current block timestamp within the range of uint32, i.e. [0, 2**32 - 1]
     function currentBlockTimestamp() internal view returns (uint32) {
         return uint32(block.timestamp % 2 ** 32);

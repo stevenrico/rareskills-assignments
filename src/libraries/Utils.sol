@@ -14,6 +14,7 @@ library Utils {
 
     function getReserves(address pair, address token0, address token1)
         internal
+        view
         returns (uint256 reserve0, uint256 reserve1)
     {
         (address tokenA,) = sortTokens(token0, token1);
